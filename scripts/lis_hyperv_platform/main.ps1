@@ -12,6 +12,8 @@ param(
     [Int] $VMCheckTimeout = 200
 )
 
-& ./setup_env.ps1 $VHDPath $ConfigDrivePath $UserdataPath $KernelURL $InstanceName $MkIsoFS
-& ./check_kernel.ps1 $InstanceName $KernelVersion $VMCheckTimeout
-& ./tear_down_env.ps1 $InstanceName $ConfigDrivePath
+$scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
+
+& "$scriptPath./setup_env.ps1" $VHDPath $ConfigDrivePath $UserdataPath $KernelURL $InstanceName $MkIsoFS
+& "$scriptPath./check_kernel.ps1" $InstanceName $KernelVersion $VMCheckTimeout
+& "$scriptPath./tear_down_env.ps1" $InstanceName $ConfigDrivePath
