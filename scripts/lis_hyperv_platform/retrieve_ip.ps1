@@ -7,7 +7,7 @@ $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $scriptPath = (get-item $scriptPath ).parent.FullName
 . "$scriptPath\backend.ps1"
 
-function Main {
+function Get-IP {
     $backend = [HypervBackend]::new(@("localhost"))
     $instance = [HypervInstance]::new($backend, $InstanceName, "")
 
@@ -21,7 +21,5 @@ function Main {
         $VMCheckTimeout = $VMCheckTimeout - 5
     }
 
-    Write-Host "ip is : $ip"
+    return $ip
 }
-
-Main

@@ -12,11 +12,26 @@ param(
     [Int] $VMCheckTimeout = 200
 )
 
+$ErrorActionPreference = "Stop"
+
+$scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
+. "$scriptPath\retrieve_ip.ps1"
 $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
 
-try {
-    & "$scriptPath/setup_env.ps1" $VHDPath $ConfigDrivePath $UserdataPath $KernelURL $InstanceName $MkIsoFS
-    & "$scriptPath/retrieve_ip.ps1" $InstanceName $VMCheckTimeout
-} catch {
-    throw "error"
-}
+& "$scriptPath\setup_env.ps1" $VHDPath $ConfigDrivePath $UserdataPath $KernelURL $InstanceName $MkIsoFS
+$ip = Get-IP $InstanceName $VMCheckTimeout
+& ssh.exe -tt -o StrictHostKeyChecking=no -i "$scriptPath\$InstanceName-id-rsa" ubuntu@$ip
+Start-Sleep 5
+& ssh.exe -tt -o StrictHostKeyChecking=no -i "$scriptPath\$InstanceName-id-rsa" ubuntu@$ip
+Start-Sleep 5
+& ssh.exe -tt -o StrictHostKeyChecking=no -i "$scriptPath\$InstanceName-id-rsa" ubuntu@$ip
+Start-Sleep 5
+& ssh.exe -tt -o StrictHostKeyChecking=no -i "$scriptPath\$InstanceName-id-rsa" ubuntu@$ip
+Start-Sleep 5
+& ssh.exe -tt -o StrictHostKeyChecking=no -i "$scriptPath\$InstanceName-id-rsa" ubuntu@$ip
+Start-Sleep 5
+& ssh.exe -tt -o StrictHostKeyChecking=no -i "$scriptPath\$InstanceName-id-rsa" ubuntu@$ip
+Start-Sleep 5
+& ssh.exe -tt -o StrictHostKeyChecking=no -i "$scriptPath\$InstanceName-id-rsa" ubuntu@$ip
+Start-Sleep 20
+& ssh.exe -tt -o StrictHostKeyChecking=no -i "$scriptPath\$InstanceName-id-rsa" ubuntu@$ip

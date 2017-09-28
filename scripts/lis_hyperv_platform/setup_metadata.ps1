@@ -47,7 +47,7 @@ function Main {
 
     $configDrive = [ConfigDrive]::new("somethin", $ConfigDrivePath)
     $configDrive.GetProperties()
-    $configDrive.ChangeProperty("hostname", "somethingSweet")
+    $configDrive.ChangeProperty("hostname", "cloudbase")
     $configDrive.ChangeSSHKey("$scriptPath/$InstanceName-id-rsa.pub")
     $configDrive.ChangeUserData("$UserdataPath")
     $configDrive.SaveToNewConfigDrive("$ConfigDrivePath-tmp")
