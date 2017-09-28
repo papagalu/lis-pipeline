@@ -14,6 +14,9 @@ param(
 
 $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
 
-& "$scriptPath./setup_env.ps1" $VHDPath $ConfigDrivePath $UserdataPath $KernelURL $InstanceName $MkIsoFS
-& "$scriptPath./check_kernel.ps1" $InstanceName $KernelVersion $VMCheckTimeout
-& "$scriptPath./tear_down_env.ps1" $InstanceName $ConfigDrivePath
+try {
+    & "$scriptPath/setup_env.ps1" $VHDPath $ConfigDrivePath $UserdataPath $KernelURL $InstanceName $MkIsoFS
+    & "$scriptPath/retrieve_ip.ps1" $InstanceName $VMCheckTimeout
+} catch {
+    throw "error"
+}

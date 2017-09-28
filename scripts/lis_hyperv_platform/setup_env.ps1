@@ -11,14 +11,15 @@ param (
 )
 
 $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
-$scriptPath = (get-item $scriptPath ).parent.FullName
-. "$scriptPath\backend.ps1"
+
+$scriptPath1 = (get-item $scriptPath ).parent.FullName
+. "$scriptPath1\backend.ps1"
 
 function Main {
     $backend = [HypervBackend]::new(@("localhost"))
     $instance = [HypervInstance]::new($backend, $InstanceName, $VHDPath)
 
-    & "./setup_metadata.ps1" $ConfigDrivePath $UserdataPath $KernelURL $MkIsoFS
+    & "$scriptPath/setup_metadata.ps1" $ConfigDrivePath $UserdataPath $KernelURL $MkIsoFS
 
     $instance.Cleanup()
     $instance.CreateInstance()

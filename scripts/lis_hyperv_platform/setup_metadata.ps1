@@ -43,18 +43,18 @@ function Main {
     $UserdataPath = Preserve-Item $UserdataPath
     Update-URL $UserdataPath $KernelURL
 
-    & 'ssh-keygen.exe' -t rsa -f "$InstanceName-id-rsa" -q -N "''" -C "ubuntu"
+    & 'ssh-keygen.exe' -t rsa -f "$scriptPath/$InstanceName-id-rsa" -q -N "''" -C "debian"
 
     $configDrive = [ConfigDrive]::new("somethin", $ConfigDrivePath)
     $configDrive.GetProperties()
     $configDrive.ChangeProperty("hostname", "somethingSweet")
-    $configDrive.ChangeSSHKey("$InstanceName-id-rsa.pub")
-    $configDrive.ChangeUserData($UserdataPath)
+    $configDrive.ChangeSSHKey("$scriptPath/$InstanceName-id-rsa.pub")
+    $configDrive.ChangeUserData("$UserdataPath")
     $configDrive.SaveToNewConfigDrive("$ConfigDrivePath-tmp")
 
     Make-ISO $MkIsoFS "$ConfigDrivePath-tmp" "$ConfigDrivePath.iso"
     Remove-Item -Force -Recurse -Path "$ConfigDrivePath-tmp"
-    Remove-Item -Force $UserdataPath
+    Remove-Item -Force "$UserdataPath"
 }
 
 Main

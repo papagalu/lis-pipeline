@@ -1,6 +1,5 @@
 param(
     [String] $InstanceName = "Instance1",
-    [String] $KernelVersion = "4.13.2",
     [Int] $VMCheckTimeout = 100
 )
 
@@ -12,8 +11,6 @@ function Main {
     $backend = [HypervBackend]::new(@("localhost"))
     $instance = [HypervInstance]::new($backend, $InstanceName, "")
 
-    Start-Sleep 100
-
     while ($VMCheckTimeout -gt 0) {
         $ip = $instance.GetPublicIP()
         if ([String]::IsNullOrWhiteSpace($ip)) {
@@ -24,13 +21,7 @@ function Main {
         $VMCheckTimeout = $VMCheckTimeout - 5
     }
 
-    $kernel = & ssh.exe -oStrictHostKeyChecking=no -i "$InstanceName-id-rsa" "ubuntu@$ip" 'uname -r'
-
-    if ($KernelVersion -ne $kernel) {
-        throw "Kernel missmatch Expected kernel: $KernelVersion != Actual kernel : $kernel"
-    } else {
-        Write-Host "SUCCESS" -ForegroundColor Green
-    }
+    Write-Host "ip is : $ip"
 }
 
 Main

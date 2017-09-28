@@ -4,16 +4,16 @@ param(
 )
 
 $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
-$scriptPath = (get-item $scriptPath ).parent.FullName
-. "$scriptPath\backend.ps1"
+$scriptPath1 = (get-item $scriptPath ).parent.FullName
+. "$scriptPath1\backend.ps1"
 
 function Main {
     $backend = [HypervBackend]::new(@("localhost"))
     $instance = [HypervInstance]::new($backend, $InstanceName, $VHDPath)
 
     $instance.Cleanup()
-    Remove-Item -Force "$InstanceName-id-rsa.pub"
-    Remove-Item -Force "$InstanceName-id-rsa"
+    Remove-Item -Force "$scriptPath\$InstanceName-id-rsa.pub"
+    Remove-Item -Force "$scriptPath\$InstanceName-id-rsa"
     Remove-Item -Force "$ConfigDrivePath.iso"
 }
 
