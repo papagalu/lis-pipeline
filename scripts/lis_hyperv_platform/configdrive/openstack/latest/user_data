@@ -1,0 +1,5 @@
+#!/bin/bash
+
+echo "root:Passw0rd"|chpasswd
+
+exit 0
