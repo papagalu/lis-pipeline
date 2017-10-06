@@ -11,13 +11,18 @@ param(
 $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
 . "$scriptPath\config_drive.ps1"
 
+$ErrorActionPreference = "Stop"
 function Make-ISO {
     param(
         [String] $MkIsoFSPath,
         [String] $TargetPath,
         [String] $OutputPath
     )
-    & $MkisofsPath -V config-2 -r -R -J -l -L -o  $OutputPath $TargetPath
+
+    & $MkisofsPath -V config-2 -r -R -J -l -L -o $OutputPath $TargetPath
+    if ($lastExitcode) {
+        throw
+    }
 }
 
 function Update-URL {
@@ -42,9 +47,9 @@ function Preserve-Item {
 function Main {
     $UserdataPath = Preserve-Item $UserdataPath
     Update-URL $UserdataPath $KernelURL
-
-    & 'ssh-keygen.exe' -t rsa -f "$scriptPath/$InstanceName-id-rsa" -q -N "''" -C "debian"
-
+    if (!(test-path "$scriptPath/$InstanceName-id-rsa")) {
+        & 'ssh-keygen.exe' -t rsa -f "$scriptPath/$InstanceName-id-rsa" -q -N "''" -C "debian"
+    }
     $configDrive = [ConfigDrive]::new("somethin", $ConfigDrivePath)
     $configDrive.GetProperties()
     $configDrive.ChangeProperty("hostname", "cloudbase")
@@ -56,5 +61,10 @@ function Main {
     Remove-Item -Force -Recurse -Path "$ConfigDrivePath-tmp"
     Remove-Item -Force "$UserdataPath"
 }
-
+try {
 Main
+}
+catch {
+Write-host $_
+throw $_
+}

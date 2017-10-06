@@ -19,12 +19,17 @@ function Main {
     $backend = [HypervBackend]::new(@("localhost"))
     $instance = [HypervInstance]::new($backend, $InstanceName, $VHDPath)
 
-    & "$scriptPath/setup_metadata.ps1" $ConfigDrivePath $UserdataPath $KernelURL $MkIsoFS
-
+    $b = & "$scriptPath/setup_metadata.ps1" $ConfigDrivePath $UserdataPath $KernelURL $MkIsoFS
+    if ($lastexitcode) {
+    throw $b
+    }
     $instance.Cleanup()
     $instance.CreateInstance()
     $instance.AttachVMDvdDrive("$ConfigDrivePath.iso")
     $instance.StartInstance()
 }
-
+try {
 Main
+} catch {
+write-host $_
+}
