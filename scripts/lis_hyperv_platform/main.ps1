@@ -1,4 +1,5 @@
 param(
+    [String] $SharedStoragePath = "\\10.7.13.118\lava",
     [String] $VHDPath = "C:\path\to\example.vhdx",
     [String] $ConfigDrivePath = "C:\path\to\configdrive\",
     [String] $UserdataPath = "C:\path\to\userdata.sh",
@@ -13,8 +14,10 @@ $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
 . "$scriptPath\retrieve_ip.ps1"
 
 try {
-    net use H: "\\10.7.13.118\lava" /persistent:NO
-    $localPath = "C:\var\lib\lava\dispatcher\tmp\"
+    $SharedStoragePath = $SharedStoragePath.replace("\\","\")
+    Write-Host $SharedStoragePath
+    net use H: $SharedStoragePath /persistent:NO
+    $localPath = "F:\var\lib\lava\dispatcher\tmp\"
     $VHDPath = $VHDPath.Replace("/var/lib/lava/dispatcher/tmp", "")
     $path = "H:$VHDPath"
     if (!(Test-Path $path)) {

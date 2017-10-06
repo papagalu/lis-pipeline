@@ -19,6 +19,6 @@ function Get-IP {
     if (($VMCheckTimeout -eq 0) -or !$ip) {
         throw "Failed to get an IP."
     }
-    Write-Host "IP for the instance is: $ip <<<<"
+    Write-Host "IP for the instance is: >>>> $ip <<<<"
     return $ip
 }

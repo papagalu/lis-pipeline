@@ -1,4 +1,5 @@
 param(
+    [String] $SharedStoragePath = "\\10.7.13.118\lava",
     [String] $VHDPath = "C:\path\to\example.vhdx",
     [String] $ConfigDrivePath = "C:\path\to\configdrive\",
     [String] $UserdataPath = "C:\path\to\userdata.sh",
@@ -10,6 +11,7 @@ param(
    )
 
 $command = ("& C:\\\\Users\\\\avlad\\\\work\\projects\\\\lis-pipeline\\\\scripts\\\\lis_hyperv_platform\\\\\\main.ps1 " `
+           + "-SharedStoragePath $SharedStoragePath " `
            + "-VHDPath $VHDPath " `
            + "-ConfigDrivePath $ConfigDrivePath -UserDataPath $UserdataPath -KernelURL $KernelURL -MkIsoFS $MkIsoFS " `
            + "-InstanceName $InstanceName -KernelVersion $KernelVersion -VMCheckTimeout $VMCheckTimeout")
@@ -109,7 +111,7 @@ start-sleep -m 100
 if (Test-Path $out_file) {
     $text = (Get-Content $out_file)
     foreach ($line in $text) {
-        if (!$line.contains("<Obj")) {
+        if ((!$line.contains("<Obj")) -or $line.contains("<<<")) {
             Write-Host $line
         }
     }
