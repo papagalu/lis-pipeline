@@ -1,6 +1,5 @@
 param(
-   [String] $InstanceName = "Instance1",
-   [String] $ConfigDrivePath = "C:\path\to\configdrive\"
+    [String] $InstanceName = "Instance1"
 )
 
 $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
@@ -11,10 +10,11 @@ function Main {
     $backend = [HypervBackend]::new(@("localhost"))
     $instance = [HypervInstance]::new($backend, $InstanceName, $VHDPath)
 
+    $vhdPath = $instance.GetVHDPath()
     $instance.Cleanup()
-    Remove-Item -Force "$scriptPath\$InstanceName-id-rsa.pub"
-    Remove-Item -Force "$scriptPath\$InstanceName-id-rsa"
-    Remove-Item -Force "$ConfigDrivePath.iso"
+    $vhdDirectoryPath = $vhdPath | Split-Path
+
+    Remove-Item -Recurse -Force $vhdDirectoryPath
 }
 
 Main

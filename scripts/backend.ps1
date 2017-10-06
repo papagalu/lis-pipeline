@@ -87,6 +87,10 @@ class HypervInstance : Instance {
     [void] AttachVMDvdDrive ($DvdDrive) {
         $this.Backend.AttachVMDvdDrive($this.Name, $DvdDrive)
     }
+
+    [String] GetVHDPath () {
+        return $this.Backend.GetVHDPath($this.Name)
+    }
 }
 
 
@@ -877,6 +881,16 @@ class HypervBackend : Backend {
         $ip = $this.GetPublicIP($InstanceName)
         $session = New-PSSession -ComputerName $ip -Credential $this.Credentials
         return $session
+    }
+
+    [String] GetVHDPath ($InstanceName) {
+        if (Get-VM -Name $InstanceName) {
+            $vmPath = (Get-VM -Name $InstanceName | Select-Object VMId | Get-VHD).Path
+        } else {
+            $vmPath = ""
+        }
+
+        return $vmPath
     }
 }
 
