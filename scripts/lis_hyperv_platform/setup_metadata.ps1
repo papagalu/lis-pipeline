@@ -1,5 +1,5 @@
 param(
-    [String] $ConfigDrivePath = "C:\path\to\configdrive\",
+    [String] $JobPath = "C:\path\to\job",
     [String] $UserdataPath = "C:\path\to\userdata.sh",
     [String[]] $KernelURL = @(
         "http://URL/TO/linux-headers.deb",
@@ -12,6 +12,7 @@ $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
 . "$scriptPath\config_drive.ps1"
 
 $ErrorActionPreference = "Stop"
+
 function Make-ISO {
     param(
         [String] $MkIsoFSPath,
@@ -19,9 +20,15 @@ function Make-ISO {
         [String] $OutputPath
     )
 
-    & $MkisofsPath -V config-2 -r -R -J -l -L -o $OutputPath $TargetPath
-    if ($lastExitcode) {
-        throw
+    try {
+        & $MkisofsPath -V config-2 -r -R -J -l -L -o $OutputPath $TargetPath
+        if ($LastExitCode) {
+            throw
+        }
+    } catch {
+        return
+    } finally {
+        $Error.Clear()
     }
 }
 
@@ -45,26 +52,32 @@ function Preserve-Item {
 
 
 function Main {
+    #test $JobPath
+    #test $UserdataPAth
+    #test $KernelURL
+    #test mkISOfs
+    
     $UserdataPath = Preserve-Item $UserdataPath
     Update-URL $UserdataPath $KernelURL
-    if (!(test-path "$scriptPath/$InstanceName-id-rsa")) {
-        & 'ssh-keygen.exe' -t rsa -f "$scriptPath/$InstanceName-id-rsa" -q -N "''" -C "debian"
+    
+    & 'ssh-keygen.exe' -t rsa -f "$JobPath/$InstanceName-id-rsa" -q -N "''" -C "debian"
+    if ($Error.Count -ne 0) {
+        throw $Error[0]
     }
-    $configDrive = [ConfigDrive]::new("somethin", $ConfigDrivePath)
-    $configDrive.GetProperties()
-    $configDrive.ChangeProperty("hostname", "cloudbase")
-    $configDrive.ChangeSSHKey("$scriptPath/$InstanceName-id-rsa.pub")
-    $configDrive.ChangeUserData("$UserdataPath")
-    $configDrive.SaveToNewConfigDrive("$ConfigDrivePath-tmp")
 
-    Make-ISO $MkIsoFS "$ConfigDrivePath-tmp" "$ConfigDrivePath.iso"
-    Remove-Item -Force -Recurse -Path "$ConfigDrivePath-tmp"
-    Remove-Item -Force "$UserdataPath"
+    Write-Host "Creating ConfigDrive"
+    $configDrive = [ConfigDrive]::new("configdrive")
+    $configDrive.GetProperties("")
+    $configDrive.ChangeProperty("hostname", "pipeline")
+    $configDrive.ChangeSSHKey("$JobPath/$InstanceName-id-rsa.pub")
+    $configDrive.ChangeUserData($UserdataPath)
+    $configDrive.SaveToNewConfigDrive("$scriptPath/configdrive-tmp")
+
+    Make-ISO $MkIsoFS "$scriptPath/configdrive-tmp" "$JobPath/configdrive.iso"
+    Write-Host "Finished creating ConfigDrive"
+
+    Remove-Item -Force -Recurse -Path "$scriptPath/configdrive-tmp"
+    Remove-Item -Force $UserdataPath
 }
-try {
+
 Main
-}
-catch {
-Write-host $_
-throw $_
-}

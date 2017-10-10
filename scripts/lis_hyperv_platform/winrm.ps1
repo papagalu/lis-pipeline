@@ -10,15 +10,15 @@ param(
     [Int] $VMCheckTimeout = 200
    )
 
-$command = ("& C:\\\\Users\\\\avlad\\\\work\\projects\\\\lis-pipeline\\\\scripts\\\\lis_hyperv_platform\\\\\\main.ps1 " `
+$command = ("& C:\\\\Users\\\\dimi\workspace\framework_scripts\\\\lis-pipeline\\\\scripts\\\\lis_hyperv_platform\\\\\\main.ps1 " `
            + "-SharedStoragePath $SharedStoragePath " `
            + "-VHDPath $VHDPath " `
-           + "-ConfigDrivePath $ConfigDrivePath -UserDataPath $UserdataPath -KernelURL $KernelURL -MkIsoFS $MkIsoFS " `
+           + "-UserDataPath $UserdataPath -KernelURL $KernelURL -MkIsoFS $MkIsoFS " `
            + "-InstanceName $InstanceName -KernelVersion $KernelVersion -VMCheckTimeout $VMCheckTimeout")
 
 echo $command
-$user = "test"
-$password = "Passw0rd"
+$user = "dimi"
+$password = "jimmy"
 $random = get-random 10000
 $task_name = "WinRM_Elevated_Shell-$random" 
 $out_file = "$env:SystemRoot\Temp\WinRM_Elevated_Shell-$random.log"

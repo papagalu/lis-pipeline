@@ -1,6 +1,6 @@
 param (
+    [String] $JobPath = "C:\[ath\to\job",
     [String] $VHDPath = "C:\path\to\example.vhdx",
-    [String] $ConfigDrivePath = "C:\path\to\configdrive\",
     [String] $UserdataPath = "C:\path\to\userdata.sh",
     [String[]] $KernelURL = @(
         "http://URL/TO/linux-headers.deb",
@@ -16,20 +16,19 @@ $scriptPath1 = (get-item $scriptPath ).parent.FullName
 . "$scriptPath1\backend.ps1"
 
 function Main {
+    #test jobPath
+    
     $backend = [HypervBackend]::new(@("localhost"))
     $instance = [HypervInstance]::new($backend, $InstanceName, $VHDPath)
 
-    $b = & "$scriptPath/setup_metadata.ps1" $ConfigDrivePath $UserdataPath $KernelURL $MkIsoFS
-    if ($lastexitcode) {
-    throw $b
+    & "$scriptPath/setup_metadata.ps1" $JobPath $UserdataPath $KernelURL $MkIsoFS
+    if ($Error.Count -ne 0) {
+        throw $Error[0]
     }
-    $instance.Cleanup()
+
     $instance.CreateInstance()
-    $instance.AttachVMDvdDrive("$ConfigDrivePath.iso")
+    $instance.AttachVMDvdDrive("$JobPath/configdrive.iso")
     $instance.StartInstance()
 }
-try {
+
 Main
-} catch {
-write-host $_
-}

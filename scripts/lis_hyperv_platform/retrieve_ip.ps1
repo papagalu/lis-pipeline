@@ -1,6 +1,6 @@
 $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
-$scriptPath = (get-item $scriptPath ).parent.FullName
-. "$scriptPath\backend.ps1"
+$scriptPathBackend = (get-item $scriptPath ).parent.FullName
+. "$scriptPathBackend\backend.ps1"
 
 function Get-IP {
     $backend = [HypervBackend]::new(@("localhost"))
