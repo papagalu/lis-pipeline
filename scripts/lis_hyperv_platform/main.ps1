@@ -1,6 +1,6 @@
 param(
     [String] $SharedStoragePath = "\\shared\storage\path",
-    [String] $VHDPath = "C:\path\to\example.vhdx",
+    [String] $JobId = "64",
     [String] $UserdataPath = "C:\path\to\userdata.sh",
     [String] $KernelURL = "kernel_url",
     [String] $MkIsoFS = "C:\path\to\mkisofs.exe",
@@ -14,39 +14,49 @@ $ErrorActionPreference = "Stop"
 $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
 . "$scriptPath\retrieve_ip.ps1"
 
+function MyTest-Path {
+    param(
+        [String] $Path
+    )
+    if (!(Test-Path $Path)) {
+       throw "Path $Path not found"
+    }
+
+}
+
 function Prepare-LocalEnv {
     param(
         [String] $SharedStoragePath,
-        [String] $VHDPath
+        [String] $JobId
     )
 
+    $path = "/var/lib/lava/dispatcher/tmp/$JobId"
+    $remotePath = "H:\$JobId"
+    $localPath = "C:$path"
+
     $SharedStoragePath = $SharedStoragePath.Replace("\\", "\")
-    #net use H: /d
+
     net use H: $SharedStoragePath /persistent:NO 2>&1 | Out-Null
     if ($LastExitCode) {
         throw
     }
 
-    $localPath = "C:\var\lib\lava\dispatcher\tmp\"
-    $VHDPath = $VHDPath.Replace("/var/lib/lava/dispatcher/tmp", "")
-    $path = "H:$VHDPath"
 
-    if (!(Test-Path $path)) {
-       throw "Path $path not found"
-    }
+    MyTest-Path $remotePath
 
-    $remoteJobFolder = Split-Path -Path $path
-    $deployId = Split-Path -Path $remoteJobFolder -Leaf
-    $temp = Split-Path $remoteJobFolder
-    $jobId = Split-Path -Path $temp -Leaf
-    $jobFolder = Join-Path $localPath $jobId
-    $jobFolder = Join-Path $jobFolder $deployId
-    
-    New-Item -Path $jobFolder -ItemType "directory" | Out-Null
-    $localVHDPath = Join-Path $jobFolder  (Split-Path -Path $path -Leaf)
-    Copy-Item -Path $path -Destination $localVHDPath -Force
+    New-Item -Path $localPath -ItemType "directory" | Out-Null
+    Copy-Item -Path "$remotePath/*" -Destination $localPath -Force -Recurse
 
-    return @($localVHDPath, $remoteJobFolder)
+    $localVHDPath = (Get-ChildItem -Filter "ubuntu-cloud.vhdx" -Path $localPath -Recurse ).FullName
+    MyTest-Path $localVHDPath
+
+    $lavaToolDisk = (Get-ChildItem -Filter "lava-guest.vhdx" -Path $localPath -Recurse ).FullName
+    MyTest-Path $lavaToolDisk
+
+    $remoteVHDPath = (Get-ChildItem -Filter "ubuntu-cloud.vhdx" -Path $remotePath -Recurse ).FullName
+    $remotePath = Split-Path -Parent $remoteVHDPath
+
+    return @($localVHDPath, $lavaToolDisk, $remotePath)
 }
 
 function Expand-URL {
@@ -66,14 +76,15 @@ function Expand-URL {
 function Main {
     $Error.Clear()
 
-    $return = Prepare-LocalEnv $SharedStoragePath $VHDPath
+    $return = Prepare-LocalEnv $SharedStoragePath $JobId
     $localVHDPath = $return[0]
-    $remoteJobFolder = $return[1]
+    $lavaToolDisk = $return[1]
+    $remoteJobFolder = $return[2]
 
     $expandedURL = Expand-URL $KernelURL $KernelVersion
     $jobPath = Split-Path -Parent $localVHDPath
     
-    & "$scriptPath\setup_env.ps1" $jobPath $localVHDPath $UserdataPath $expandedURL $InstanceName $MkIsoFS
+    & "$scriptPath\setup_env.ps1" $jobPath $localVHDPath $UserdataPath $expandedURL $InstanceName $MkIsoFS $lavaToolDisk
     if ($Error.Count -ne 0) {
         throw $Error[0]
     }

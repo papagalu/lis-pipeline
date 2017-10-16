@@ -87,6 +87,18 @@ class HypervInstance : Instance {
     [void] AttachVMDvdDrive ($DvdDrive) {
         $this.Backend.AttachVMDvdDrive($this.Name, $DvdDrive)
     }
+
+    [Array] GetVMHDD () {
+        return $this.Backend.GetVMHDD($this.Name) 
+    }
+
+    [void] AddVMHDD ($HDD) {
+        $this.Backend.AddVMHDD($this.Name, $HDD)
+    }
+
+    [String] GetVHDPath () {
+        return $this.Backend.GetVHDPath($this.Name)
+    }
 }
 
 
@@ -878,6 +890,51 @@ class HypervBackend : Backend {
         $session = New-PSSession -ComputerName $ip -Credential $this.Credentials
         return $session
     }
+
+    [Array] GetVMHDD ($InstanceName) {
+        $scriptBlock = {
+            param($InstanceName)
+            $hdd = @()
+            $hdd += (Get-VMHardDiskDrive -VMName $InstanceName).Path
+            return $hdd
+        }
+        $params = @{
+            "ScriptBlock"=$scriptBlock;
+            "ArgumentList"=@($InstanceName);
+        }
+        $hdd = $this.RunHypervCommand($params)
+        return $hdd
+    }
+
+    [void] AddVMHDD ($InstanceName, $HDD) {
+        $scriptBlock = {
+            param($InstanceName, $HDD)
+            Add-VMHardDiskDrive -ControllerType IDE -controllerNumber 1 `
+                                -Path $HDD -VMName $InstanceName
+        }
+        $params = @{
+            "ScriptBlock"=$scriptBlock;
+            "ArgumentList"=@($InstanceName, $HDD);
+        }
+        $this.RunHypervCommand($params)
+    }
+
+    [String] GetVHDPath ($InstanceName) {
+        $scriptBlock = {
+            param($InstanceName)
+            if (Get-VM -Name $InstanceName) {
+                $vmPath = (Get-VM -Name $InstanceName | Select-Object VMId | Get-VHD).Path
+            } else {
+                $vmPath = ""
+            }
+            return $vmPath
+        }
+        $params = @{
+            "ScriptBlock"=$scriptBlock;
+            "ArgumentList"=@($InstanceName);
+        }
+        return $this.RunHypervCommand($params)
+   }
 }
 
 

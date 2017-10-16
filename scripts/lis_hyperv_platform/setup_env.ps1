@@ -1,5 +1,5 @@
 param (
-    [String] $JobPath = "C:\[ath\to\job",
+    [String] $JobPath = "C:\path\to\job",
     [String] $VHDPath = "C:\path\to\example.vhdx",
     [String] $UserdataPath = "C:\path\to\userdata.sh",
     [String[]] $KernelURL = @(
@@ -7,8 +7,19 @@ param (
         "http://URL/TO/linux-image.deb",
         "http://URL/TO/hyperv-daemons.deb"),
     [String] $InstanceName = "Instance1",
-    [String] $MkIsoFS = "C:\path\to\mkisofs.exe"
+    [String] $MkIsoFS = "C:\path\to\mkisofs.exe",
+    [String] $LavaToolsDisk = "C:\path\to\tools"
 )
+
+function MyTest-Path {
+    param(
+        [String] $Path
+    )
+    if (!(Test-Path $Path)) {
+       throw "Path $Path not found"
+    }
+
+}
 
 $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
 
@@ -16,7 +27,7 @@ $scriptPath1 = (get-item $scriptPath ).parent.FullName
 . "$scriptPath1\backend.ps1"
 
 function Main {
-    #test jobPath
+    MyTest-Path $JobPath
     
     $backend = [HypervBackend]::new(@("localhost"))
     $instance = [HypervInstance]::new($backend, $InstanceName, $VHDPath)
@@ -28,6 +39,7 @@ function Main {
 
     $instance.CreateInstance()
     $instance.AttachVMDvdDrive("$JobPath/configdrive.iso")
+    $instance.AddVMHDD($LavaToolsDisk)
     $instance.StartInstance()
 }
 

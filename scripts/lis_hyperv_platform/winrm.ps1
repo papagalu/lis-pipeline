@@ -1,24 +1,25 @@
 param(
     [String] $SharedStoragePath = "\\10.7.13.118\lava",
-    [String] $VHDPath = "C:\path\to\example.vhdx",
+    [String] $JobId = "64",
     [String] $ConfigDrivePath = "C:\path\to\configdrive\",
     [String] $UserdataPath = "C:\path\to\userdata.sh",
     [String] $KernelURL = "kernel_url",
     [String] $MkIsoFS = "C:\path\to\mkisofs.exe",
     [String] $InstanceName = "Instance1",
     [String] $KernelVersion = "4.13.2",
+    [String] $SecretsPath = "C:\path\to\secrets.ps1",
     [Int] $VMCheckTimeout = 200
    )
 
-$command = ("& C:\\\\Users\\\\dimi\workspace\framework_scripts\\\\lis-pipeline\\\\scripts\\\\lis_hyperv_platform\\\\\\main.ps1 " `
+$scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
+$command = ("& $scriptPath\main.ps1 " `
            + "-SharedStoragePath $SharedStoragePath " `
-           + "-VHDPath $VHDPath " `
+           + "-JobId $JobId " `
            + "-UserDataPath $UserdataPath -KernelURL $KernelURL -MkIsoFS $MkIsoFS " `
            + "-InstanceName $InstanceName -KernelVersion $KernelVersion -VMCheckTimeout $VMCheckTimeout")
 
 echo $command
-$user = "dimi"
-$password = "jimmy"
+. $SecretsPath
 $random = get-random 10000
 $task_name = "WinRM_Elevated_Shell-$random" 
 $out_file = "$env:SystemRoot\Temp\WinRM_Elevated_Shell-$random.log"

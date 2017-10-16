@@ -13,6 +13,33 @@ $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
 
 $ErrorActionPreference = "Stop"
 
+function MyTest-Path {
+    param(
+        [String] $Path
+    )
+    if (!(Test-Path $Path)) {
+       throw "Path $Path not found"
+    }
+
+}
+
+function Test-URL {
+    param(
+        [String] $URL
+    )
+
+        $HTTP_Request = [System.Net.WebRequest]::Create($URL)
+        $HTTP_Response = $HTTP_Request.GetResponse()
+        $HTTP_Status = [int]$HTTP_Response.StatusCode
+
+        if ($HTTP_Status -ne 200) {
+            Write-Host "The Site may be down, please check!"
+            throw "Kernel URL can't be reached!"
+        }
+
+	$HTTP_Response.Close()
+}
+
 function Make-ISO {
     param(
         [String] $MkIsoFSPath,
@@ -21,7 +48,8 @@ function Make-ISO {
     )
 
     try {
-        & $MkisofsPath -V config-2 -r -R -J -l -L -o $OutputPath $TargetPath
+        & $MkIsoFSPath -o $OutputPath -ldots -allow-lowercase -allow-multidot -quiet -J -r -V "config-2" $TargetPath
+
         if ($LastExitCode) {
             throw
         }
@@ -52,10 +80,11 @@ function Preserve-Item {
 
 
 function Main {
-    #test $JobPath
-    #test $UserdataPAth
-    #test $KernelURL
-    #test mkISOfs
+    MyTest-Path $JobPath
+    MyTest-Path $UserdataPath
+    foreach ($url in $KernelUrl) {
+        Test-URL $url
+    }
     
     $UserdataPath = Preserve-Item $UserdataPath
     Update-URL $UserdataPath $KernelURL

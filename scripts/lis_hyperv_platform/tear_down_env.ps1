@@ -6,17 +6,29 @@ $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $scriptPath1 = (get-item $scriptPath ).parent.FullName
 . "$scriptPath1\backend.ps1"
 
+function MyTest-Path {
+    param(
+        [String] $Path
+    )
+    if (!(Test-Path $Path)) {
+        throw "Path $Path not found"
+    }
+
+}
+
 function Main {
-    $configDrivePath = (Get-VMDvdDrive $InstanceName).Path
-    $hardDrivePath = (Get-VMHardDiskDrive LavaInstance94).Path
-    $basePath = Split-Path $configDrivePath
     $backend = [HypervBackend]::new(@("localhost"))
     $instance = [HypervInstance]::new($backend, $InstanceName, $VHDPath)
+
+    $vhdPath = $instance.GetVHDPath()
     $instance.Cleanup()
-    Remove-Item -Force "$basePath\$InstanceName-id-rsa.pub"
-    Remove-Item -Force "$basePath\$InstanceName-id-rsa"
-    Remove-Item -Force $configDrivePath
-    Remove-Item -Force $hardDrivePath
+
+    $deployPath = Split-Path $vhdPath 2>&1 | Out-Null
+    $jobPath = Split-Path $deployPath 2>&1 | Out-Null
+
+    MyTest-Path $jobPath
+
+    Remove-Item -Force -Recurse $jobPath
 }
 
 Main
