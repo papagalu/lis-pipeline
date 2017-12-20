@@ -322,3 +322,21 @@ build_metapackages () {
     export PATH="$aux_PATH"
 }
 
+upload_artifacts_dir () {
+    local target;local repo; local url; local token; local cacert;
+    target="$1"
+    repo="$2" # stable/unstable/testing
+    url="$3"
+    token="$4"
+    cacert="$5"
+
+    for files in $(ls $target); do
+        if [ -d $file ]; then
+            upload_artifacts_dir "$file" "$repo" "$url" "$token" "$cacert"
+        fi
+
+        if [ -f $file ]  && [ "${file##*.}" == "deb" ]; then
+            curl -v -X PUT -T $target "$url/$repo" -H "Authorization: Bearer $token" --cacert $cacert
+        fi
+    done
+}
