@@ -188,5 +188,30 @@ pipeline {
           }
         }
       }
+
+      stage('Publish results to PowerBI') {
+        agent {
+          node {
+            label 'lcow_ubuntu'
+          }
+        }
+        steps {
+          withCredentials([file(credentialsId: 'DB_CONF', variable: 'DB_CONF')]) {
+          sh '''#!/bin/bash
+            set -xe
+
+            echo "Publish results to PowerBI"
+            pushd "$WORKSPACE/scripts/linux_containers_on_windows/"
+
+            if [ ! -f "$WORKSPACE/scripts/linux_containers_on_windows/db_parser/db.config" ]; then
+              sudo cp $DB_CONF "$WORKSPACE/scripts/linux_containers_on_windows/db_parser/"
+            fi
+
+            bash publish_to_powerbi.sh ${ARTIFACTS_PATH} ${KERNEL_VERSION}
+            popd
+            '''
+        }
+      }
     }
   }
+}

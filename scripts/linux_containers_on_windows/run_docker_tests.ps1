@@ -57,7 +57,9 @@ function Start-DockerTests {
         [Parameter(Mandatory=$true)]
         [string]$client_path,
         [Parameter(Mandatory=$true)]
-        [string]$build_path
+        [string]$build_path,
+        [Parameter(Mandatory=$true)]
+        [string]$artifact_path
     )
 
     cd $build_path
@@ -79,6 +81,17 @@ function Start-DockerTests {
     } catch {
         Write-Host "Could not copy the logs to the workspace dir!"
     }
+
+    # copy the test results where the artifacts are
+        try {
+        if (!(Test-Path "$artifact_path\\results")) {
+            New-Item "$artifact_path\\results" -ItemType Directory
+        }
+        Copy-Item -Path .\tests.json -Destination "$artifact_path\\results\\"
+        Copy-Item -Path .\tests.log -Destination "$artifact_path\\results\\"
+    } catch {
+        Write-Host "Could not copy the logs to the workspace dir!"
+    }
 }
 
 function Copy-Artifacts {
@@ -91,20 +104,18 @@ function Copy-Artifacts {
         Get-ChildItem -Path "$LINUX_CONTAINERS_PATH" -Include *.* -File -Recurse | foreach { $_.Delete()}
     }
 
-    cd $artifact_path
-    $initrd_root_dir = Get-ChildItem -Directory | Where-Object {$_.Name.contains("kernel")} | sort -Descending -Property CreationTime | select -first 1
-    Copy-Item "$initrd_root_dir\initrd_artifact\initrd.img" $LINUX_CONTAINERS_PATH -Force
+    Copy-Item "$artifact_path\initrd_artifact\initrd.img" $LINUX_CONTAINERS_PATH -Force
     if ($LASTEXITCODE) {
-        throw "Cannot copy $initrd_root_dir\initrd_artifact\initrd.img to $LINUX_CONTAINERS_PATH"
+        throw "Cannot copy $artifact_path\initrd_artifact\initrd.img to $LINUX_CONTAINERS_PATH"
     } else {
-        Write-Host "Initrd artifact copied from $initrd_root_dir\initrd_artifact\initrd.img to $LINUX_CONTAINERS_PATH successfully"
+        Write-Host "Initrd artifact copied from $artifact_path\initrd_artifact\initrd.img to $LINUX_CONTAINERS_PATH successfully"
     }
 
-    Copy-Item "$initrd_root_dir\bootx64.efi" $LINUX_CONTAINERS_PATH -Force
+    Copy-Item "$artifact_path\bootx64.efi" $LINUX_CONTAINERS_PATH -Force
     if ($LASTEXITCODE) {
-        throw "Cannot copy $initrd_root_dir\bootx64.efi to $LINUX_CONTAINERS_PATH"
+        throw "Cannot copy $artifact_path\bootx64.efi to $LINUX_CONTAINERS_PATH"
     } else {
-        Write-Host "bootx64.efi artifact copied from $initrd_root_dir\bootx64.efi to $LINUX_CONTAINERS_PATH successfully"
+        Write-Host "bootx64.efi artifact copied from $artifact_path\bootx64.efi to $LINUX_CONTAINERS_PATH successfully"
     }
     Write-Host "Artifact copied successfully"
 }
@@ -173,10 +184,15 @@ Write-Host "Mount point is: $mount_path"
 $artifacts_path = "$mount_path\lcow_builds\"
 Write-Host "Mount path is: $artifacts_path"
 
+cd $artifacts_path
+$latest_build_path = Get-ChildItem -Directory | Where-Object {$_.Name.contains("kernel")} | sort -Descending -Property CreationTime | select -first 1
+cd $latest_build_path
+$build_full_path = (Get-Item -Path ".\" -Verbose).FullName
+
 Clean-Up $GOPATH_BUILD_DIR
-Copy-Artifacts $artifacts_path
+Copy-Artifacts $build_full_path
 
 #cd $GOPATH_BUILD_DIR\docker\bundles\
 Register-DockerdService $GOPATH_BUILD_DIR
 Start-DockerdService
-Start-DockerTests $DOCKER_CLIENT_PATH $GOPATH_BUILD_DIR
+Start-DockerTests $DOCKER_CLIENT_PATH $GOPATH_BUILD_DIR $build_full_path

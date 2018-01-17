@@ -56,6 +56,7 @@ function Build-Dockerd {
     # TODO because of broken patch we need to use and existing client,
     # otherwise use -Binary
     & $path\docker\hack\make.ps1
+    #Remove-Item "$path\docker\bundles\docker.exe"
     cp "C:\docker.exe" "$path\docker\bundles"
 }
 
