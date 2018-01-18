@@ -7,7 +7,7 @@ def PowerShellWrapper(psCmd) {
 pipeline {
   parameters {
     string(defaultValue: "True", description: 'Env cleanup', name: 'CLEAN_ENV')
-    string(defaultValue: "True", description: 'Skip building stages', name: 'SKIP_BUILDING')
+    string(defaultValue: "False", description: 'Skip building stages', name: 'SKIP_BUILDING')
     string(defaultValue: "/smb_azure_share/lcow_builds", description: 'Artifacts smb_share path', name: 'ARTIFACTS_PATH')
     string(defaultValue: "/mnt/building_dir", description: 'Build path', name: 'BUILD_PATH')
     string(defaultValue: "/mnt/building_dir/extra_packages/temp", description: 'Extra packages path', name: 'EXTRA_PACKAGE_PATH')
@@ -170,11 +170,12 @@ pipeline {
         }        
         steps {
           withCredentials(bindings: [string(credentialsId: 'SMB_SHARE_PATH', variable: 'SMB_SHARE_PATH'),
+                                     file(credentialsId: 'DB_CONF', variable: 'DB_CONF'),
                                      usernamePassword(credentialsId: 'SMB_SHARE_USER_PASS',
                                                       passwordVariable: 'PASSWORD',
                                                       usernameVariable: 'USERNAME')]) {
             echo 'Running Docker tests'
-            PowerShellWrapper('& ".\\scripts\\linux_containers_on_windows\\run_docker_tests.ps1 "${env:GOPATH_BUILD_DIR}" "${env:DOCKER_TESTS_GIT_REPO}" "${env:DOCKER_TESTS_GIT_BRANCH}" "${env:SMB_SHARE_PATH}" "${env:USERNAME}" "${env:PASSWORD}" "${env:DOCKER_CLIENT_PATH}"')
+            PowerShellWrapper('& ".\\scripts\\linux_containers_on_windows\\run_docker_tests.ps1 "${env:GOPATH_BUILD_DIR}" "${env:DOCKER_TESTS_GIT_REPO}" "${env:DOCKER_TESTS_GIT_BRANCH}" "${env:SMB_SHARE_PATH}" "${env:USERNAME}" "${env:PASSWORD}" "${env:DOCKER_CLIENT_PATH}" "${env:DB_CONF}"')
             echo 'Finished running Docker tests'
           }
         }
@@ -188,30 +189,5 @@ pipeline {
           }
         }
       }
-
-      stage('Publish results to PowerBI') {
-        agent {
-          node {
-            label 'lcow_ubuntu'
-          }
-        }
-        steps {
-          withCredentials([file(credentialsId: 'DB_CONF', variable: 'DB_CONF')]) {
-          sh '''#!/bin/bash
-            set -xe
-
-            echo "Publish results to PowerBI"
-            pushd "$WORKSPACE/scripts/linux_containers_on_windows/"
-
-            if [ ! -f "$WORKSPACE/scripts/linux_containers_on_windows/db_parser/db.config" ]; then
-              sudo cp $DB_CONF "$WORKSPACE/scripts/linux_containers_on_windows/db_parser/"
-            fi
-
-            bash publish_to_powerbi.sh ${ARTIFACTS_PATH} ${KERNEL_VERSION}
-            popd
-            '''
-        }
-      }
     }
-  }
 }

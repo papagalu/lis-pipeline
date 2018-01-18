@@ -6,6 +6,7 @@ $SMB_SHARE_PATH=$args[3]
 $SMB_SHARE_USER=$args[4]
 $SMB_SHARE_PASS=$args[5]
 $DOCKER_CLIENT_PATH=$args[6]
+$DB_CONF_FILE_PATH=$args[7]
 
 $LINUX_CONTAINERS_PATH="C:\Program Files\Linux Containers"
 
@@ -76,22 +77,15 @@ function Start-DockerTests {
         if (!(Test-Path "${env:WORKSPACE}\\results")) {
             New-Item "${env:WORKSPACE}\\results" -ItemType Directory
         }
-        Copy-Item -Path .\tests.json -Destination "${env:WORKSPACE}\\results\\"
-        Copy-Item -Path .\tests.log -Destination "${env:WORKSPACE}\\results\\"
+        #Copy-Item -Path .\tests.json -Destination "${env:WORKSPACE}\\results\\"
+        Get-Content .\tests.json | Out-file -encoding default "${env:WORKSPACE}\results\tests.json"
+        #Copy-Item -Path .\tests.log -Destination "${env:WORKSPACE}\\results\\"
+        Get-Content .\tests.log | Out-file -encoding default "${env:WORKSPACE}\results\tests.log"
     } catch {
         Write-Host "Could not copy the logs to the workspace dir!"
     }
 
-    # copy the test results where the artifacts are
-        try {
-        if (!(Test-Path "$artifact_path\\results")) {
-            New-Item "$artifact_path\\results" -ItemType Directory
-        }
-        Copy-Item -Path .\tests.json -Destination "$artifact_path\\results\\"
-        Copy-Item -Path .\tests.log -Destination "$artifact_path\\results\\"
-    } catch {
-        Write-Host "Could not copy the logs to the workspace dir!"
-    }
+    Get-Content .\tests.json | Out-file -encoding default "${env:WORKSPACE}\scripts\linux_containers_on_windows\db_parser\tests.json"
 }
 
 function Copy-Artifacts {
@@ -179,6 +173,23 @@ function Mount-Share {
     }
 }
 
+function Publish-ToPowerBI {
+    param(
+        [String] $DB_CONF_FILE_PATH
+    )
+    cd "${env:WORKSPACE}\scripts\linux_containers_on_windows\db_parser"
+    pip install -r requirements.txt
+
+    Copy-Item -Path "$DB_CONF_FILE_PATH" -Destination .
+
+    python parser.py
+    if ($LASTEXITCODE) {
+        throw "Could not publish test results to PowerBI"
+    } else {
+        Write-Host "Test results published successfully to PowerBI"
+    }
+}
+
 $mount_path = Mount-Share $SMB_SHARE_PATH $SMB_SHARE_USER $SMB_SHARE_PASS
 Write-Host "Mount point is: $mount_path"
 $artifacts_path = "$mount_path\lcow_builds\"
@@ -188,6 +199,7 @@ cd $artifacts_path
 $latest_build_path = Get-ChildItem -Directory | Where-Object {$_.Name.contains("kernel")} | sort -Descending -Property CreationTime | select -first 1
 cd $latest_build_path
 $build_full_path = (Get-Item -Path ".\" -Verbose).FullName
+Write-Host "Artifact full path is: $build_full_path"
 
 Clean-Up $GOPATH_BUILD_DIR
 Copy-Artifacts $build_full_path
@@ -196,3 +208,4 @@ Copy-Artifacts $build_full_path
 Register-DockerdService $GOPATH_BUILD_DIR
 Start-DockerdService
 Start-DockerTests $DOCKER_CLIENT_PATH $GOPATH_BUILD_DIR $build_full_path
+Publish-ToPowerBI $DB_CONF_FILE_PATH

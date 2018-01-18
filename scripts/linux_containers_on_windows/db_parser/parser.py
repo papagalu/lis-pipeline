@@ -5,8 +5,6 @@ from envparse import env
 from string import Template
 import sys
 
-tests_file_path = sys.argv[1]
-
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -39,7 +37,7 @@ def get_connection_string():
         port=env.str('Port'),
         db_name=env.str('Database'),
         db_user=env.str('User'),
-        db_password=env.str('Password'),
+        db_password=env.str('Pa'),
         encrypt=env.str('Encrypt'),
         certificate=env.str('TrustServerCertificate'),
         timeout=env.str('ConnectionTimeout')
@@ -67,7 +65,7 @@ def insert_values(cursor, values_dict):
     values = ''
     table_name = '"' + env.str('TableName') + '"'
     for item in values_dict.values():
-        values = ', '.join([values, "'" + item + "'"])
+        values = ', '.join([str(values), "'" + str(item) + "'"])
 
     insert_command = insert_command_template.substitute(
             tableName=table_name,
@@ -96,14 +94,13 @@ def insert_values(cursor, values_dict):
         sys.exit(0)
 
 
-def main(tests_file_path):
+def main():
     env.read_envfile('db.config')
     logger.debug('Initializing database connection')
     db_connection, db_cursor = init_connection()
 
     logger.debug('Executing insertion commands')
-    logger.debug('Test results file is ' + tests_file_path)
-    data = json.load(open(tests_file_path))
+    data = json.load(open('tests.json'))
 
     for row in data:
         print row
@@ -114,4 +111,4 @@ def main(tests_file_path):
 
     print_rows(db_cursor)
 
-main(tests_file_path)
+main()
