@@ -91,25 +91,30 @@ function Start-DockerTests {
 function Copy-Artifacts {
     Param(
         [Parameter(Mandatory=$true)]
-        [string]$artifact_path
+        [string]$artifact_path,
+        [Parameter(Mandatory=$true)]
+        [string]$destination
     )
 
-    if (Test-Path "$LINUX_CONTAINERS_PATH" ) { 
-        Get-ChildItem -Path "$LINUX_CONTAINERS_PATH" -Include *.* -File -Recurse | foreach { $_.Delete()}
+    if (Test-Path $destination) { 
+        Get-ChildItem -Path $destination -Include *.* -File -Recurse | foreach { $_.Delete()}
+    } else {
+        Write-Host "Directory $destination does not exist, we try to create it."
+        New-Item $destination -ItemType Directory -ErrorAction SilentlyContinue
     }
 
-    Copy-Item "$artifact_path\initrd_artifact\initrd.img" $LINUX_CONTAINERS_PATH -Force
+    Copy-Item "$artifact_path\initrd_artifact\initrd.img" $destination -Force
     if ($LASTEXITCODE) {
-        throw "Cannot copy $artifact_path\initrd_artifact\initrd.img to $LINUX_CONTAINERS_PATH"
+        throw "Cannot copy $artifact_path\initrd_artifact\initrd.img to $destination"
     } else {
-        Write-Host "Initrd artifact copied from $artifact_path\initrd_artifact\initrd.img to $LINUX_CONTAINERS_PATH successfully"
+        Write-Host "Initrd artifact copied from $artifact_path\initrd_artifact\initrd.img to $destination successfully"
     }
 
-    Copy-Item "$artifact_path\bootx64.efi" $LINUX_CONTAINERS_PATH -Force
+    Copy-Item "$artifact_path\bootx64.efi" $destination -Force
     if ($LASTEXITCODE) {
-        throw "Cannot copy $artifact_path\bootx64.efi to $LINUX_CONTAINERS_PATH"
+        throw "Cannot copy $artifact_path\bootx64.efi to $destination"
     } else {
-        Write-Host "bootx64.efi artifact copied from $artifact_path\bootx64.efi to $LINUX_CONTAINERS_PATH successfully"
+        Write-Host "bootx64.efi artifact copied from $artifact_path\bootx64.efi to $destination successfully"
     }
     Write-Host "Artifact copied successfully"
 }
@@ -190,6 +195,9 @@ function Publish-ToPowerBI {
     }
 }
 
+$current_path = (Get-Item -Path ".\" -Verbose).FullName
+$current_path = "$current_path\artifacts"
+
 $mount_path = Mount-Share $SMB_SHARE_PATH $SMB_SHARE_USER $SMB_SHARE_PASS
 Write-Host "Mount point is: $mount_path"
 $artifacts_path = "$mount_path\lcow_builds\"
@@ -202,7 +210,8 @@ $build_full_path = (Get-Item -Path ".\" -Verbose).FullName
 Write-Host "Artifact full path is: $build_full_path"
 
 Clean-Up $GOPATH_BUILD_DIR
-Copy-Artifacts $build_full_path
+Copy-Artifacts $build_full_path $LINUX_CONTAINERS_PATH
+Copy-Artifacts $build_full_path $current_path
 
 #cd $GOPATH_BUILD_DIR\docker\bundles\
 Register-DockerdService $GOPATH_BUILD_DIR
